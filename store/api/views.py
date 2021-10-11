@@ -1,8 +1,15 @@
-from .serializers import StoreSerializer
-from .models import Store
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+from .serializers import StoreSerializer, ProductCategorySerializer
+from .models import Store, ProductCategory, Product
+
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.parsers import JSONParser
+
 from drf_yasg.utils import swagger_auto_schema
 
 
@@ -49,7 +56,39 @@ class StoreDetail(APIView):
 
 
 class ProductCategoryList(APIView):
-    pass
+    def get(self, request, store_id, format=None):
+        categories = ProductCategory.objects.filter(store=store_id)
+        serializer = ProductCategorySerializer(categories, many=True)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(operation_description="description", request_body=ProductCategorySerializer)
+    def post(self, request, format=None):
+        serializer = ProductCategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@swagger_auto_schema(method='POST', request_body=ProductCategorySerializer)
+@api_view(['POST'])
+def add_product_category(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        serializer = ProductCategorySerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+
+
+@csrf_exempt
+@api_view(['GET'])
+def product_categories_list(request, store_id):
+    if request.method == 'GET':
+        categories = ProductCategory.objects.filter(store=store_id)
+        serializer = ProductCategorySerializer(categories, many=True)
+        return JsonResponse(serializer.data, safe=False)
 
 
 class ProductCategoryDetail(APIView):

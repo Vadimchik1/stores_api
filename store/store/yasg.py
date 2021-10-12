@@ -5,7 +5,7 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Restaurant Pizza",
+        title="Stores",
         default_version='v1',
         description="Test description",
         license=openapi.License(name="BSD License"),

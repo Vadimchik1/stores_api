@@ -1,7 +1,8 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .serializers import StoreSerializer, ProductCategorySerializer
+from .serializers import StoreSerializer, ProductCategorySerializer, ProductSerializerPostman, ProductSerializer, \
+    PutProductSerializer
 from .models import Store, ProductCategory, Product
 
 from rest_framework import status
@@ -55,21 +56,6 @@ class StoreDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ProductCategoryList(APIView):
-    def get(self, request, store_id, format=None):
-        categories = ProductCategory.objects.filter(store=store_id)
-        serializer = ProductCategorySerializer(categories, many=True)
-        return Response(serializer.data)
-
-    @swagger_auto_schema(operation_description="description", request_body=ProductCategorySerializer)
-    def post(self, request, format=None):
-        serializer = ProductCategorySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 @csrf_exempt
 @swagger_auto_schema(method='POST', request_body=ProductCategorySerializer)
 @api_view(['POST'])
@@ -92,12 +78,74 @@ def product_categories_list(request, store_id):
 
 
 class ProductCategoryDetail(APIView):
-    pass
+    def get_object(self, pk):
+        try:
+            return ProductCategory.objects.get(pk=pk)
+        except ProductCategory.DoesNotExist:
+            raise status.HTTP_404_NOT_FOUND
+
+    def get(self, request, pk, format=None):
+        category = self.get_object(pk)
+        serializer = ProductCategorySerializer(category)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(request_body=ProductCategorySerializer)
+    def put(self, request, pk, format=None):
+        category = self.get_object(pk)
+        serializer = StoreSerializer(category, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        category = self.get_object(pk)
+        category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ProductList(APIView):
-    pass
+@csrf_exempt
+@swagger_auto_schema(method='POST', request_body=ProductSerializerPostman)
+@api_view(['GET', 'POST'])
+def product_list(request, store_id, category_id):
+    if request.method == 'GET':
+        products = Product.objects.filter(store=store_id, category=category_id)
+        serializer = ProductSerializerPostman(products, many=True)
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        data = JSONParser().parse(request)
+        if isinstance(data, list):
+            for obj in data:
+                obj['store'] = store_id
+                obj['category'] = category_id
+                serializer = ProductSerializer(data=data, many=True)
+        else:
+            data['store'] = store_id
+            data['category'] = category_id
+            serializer = ProductSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
 
 
 class ProductDetail(APIView):
-    pass
+    def get_object(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except ProductCategory.DoesNotExist:
+            raise status.HTTP_404_NOT_FOUND
+
+    def get(self, request, store_id, category_id, product_id, format=None):
+        product = self.get_object(product_id)
+        serializer = ProductSerializerPostman(product)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(request_body=PutProductSerializer)
+    def put(self, request, store_id, category_id, product_id, format=None):
+        product = self.get_object(product_id)
+        data = request.data
+        serializer = ProductSerializer(product, data=data)
+        if serializer.is_valid():
+            serializer.update(product, data)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

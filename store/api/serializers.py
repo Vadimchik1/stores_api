@@ -14,8 +14,19 @@ class ProductCategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+
+
+class PutProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['title']
+
+
+class ProductSerializerPostman(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'title']

@@ -23,10 +23,10 @@ class ProductSerializer(serializers.ModelSerializer):
 class PutProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['title']
+        fields = ['name']
 
 
-class ProductSerializerPostman(serializers.ModelSerializer):
+class ProductSerializerPost(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'title']
+        fields = ['id', 'name']

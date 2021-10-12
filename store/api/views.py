@@ -128,6 +128,29 @@ def product_list(request, store_id, category_id):
             return Response(serializer.data, status=201)
 
 
+class ProductList(APIView):
+    def get(self, request, store_id, category_id, format=None):
+        products = Product.objects.filter(store=store_id, category=category_id)
+        serializer = ProductSerializerPostman(products, many=True)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(request_body=ProductSerializerPostman)
+    def post(self, request, store_id, category_id, format=None):
+        data = JSONParser().parse(request)
+        if isinstance(data, list):
+            for obj in data:
+                obj['store'] = store_id
+                obj['category'] = category_id
+                serializer = ProductSerializer(data=data, many=True)
+        else:
+            data['store'] = store_id
+            data['category'] = category_id
+            serializer = ProductSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+
+
 class ProductDetail(APIView):
     def get_object(self, pk):
         try:
